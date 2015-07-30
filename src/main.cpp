@@ -132,6 +132,9 @@ int main() {
         exit(1);
 
     GLFWwindow* window = glfwCreateWindow(800, 600, "Beagle", nullptr, nullptr);
+	if (!window)
+		exit(1);
+
     glfwMakeContextCurrent(window);
 
     // Setup ImGui binding
@@ -141,9 +144,9 @@ int main() {
     io.IniFilename = nullptr;
     io.Fonts->AddFontFromMemoryCompressedTTF(droid_compressed_data, droid_compressed_size, 16);
 
-    ImVec4 normal  = {0.90, 0.90, 0.90, 0.5};
-    ImVec4 hovered = {0.90, 0.90, 0.90, 1.0};
-    ImVec4 active  = {0.80, 0.80, 0.80, 1.0};
+    ImVec4 normal  = {0.90f, 0.90f, 0.90f, 0.5f};
+    ImVec4 hovered = {0.90f, 0.90f, 0.90f, 1.0f};
+    ImVec4 active  = {0.80f, 0.80f, 0.80f, 1.0f};
 
     ImGuiStyle& style = ImGui::GetStyle();
     style.WindowRounding = 0;

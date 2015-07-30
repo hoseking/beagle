@@ -1,1 +1,26 @@
-build/
+/bin
+/lib
+/libs
+/Debug
+/Release
+
+# Xcode
+/*.xcodeproj*
+/*.build
+
+# Visual Studio
+/*.vcxproj*
+/*.sdf
+/*.sln
+/*.opensdf
+/*.dir
+/Win32
+/x64
+
+# CMake
+/CMakeCache.txt
+/CMakeFiles
+/CMakeScripts
+/Makefile
+/cmake_install.cmake
+/install_manifest.txt
