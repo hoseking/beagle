@@ -8,6 +8,7 @@ namespace midi {
 
 MidiManager::MidiManager() {
     mRtMidiIn.reset(new RtMidiIn());
+    mRtMidiOut.reset(new RtMidiOut());
 }
 
 MidiManager::~MidiManager() {
@@ -29,9 +30,15 @@ std::vector<std::string> MidiManager::getPortNames() const {
 bool MidiManager::openPort(std::string name, MidiRecievedFunction f) {
     closePort();
 
-    const auto number = portNumber(name);
+    const auto inputNumber = inputPortNumber(name);
+    const auto outputNumber = outputPortNumber(name);
+    if (inputNumber == -1 || outputNumber == -1) {
+        return false;
+    }
+
     try {
-        mRtMidiIn->openPort(number);
+        mRtMidiOut->openPort(inputNumber);
+        mRtMidiIn->openPort(outputNumber);
         mRtMidiIn->setCallback(&RtMidiCallback, this);
         mMidiRecievedFunction = f;
     } catch (RtMidiError e) {
@@ -44,10 +51,20 @@ bool MidiManager::openPort(std::string name, MidiRecievedFunction f) {
 void MidiManager::closePort() {
     mRtMidiIn->cancelCallback();
     mRtMidiIn->closePort();
+    mRtMidiOut->closePort();
     mMidiRecievedFunction = nullptr;
 }
 
-int MidiManager::portNumber(std::string name) const {
+void MidiManager::sendMessage(const ChannelMessage& channelMessage) const {
+    std::vector<unsigned char> message{
+        channelMessage.statusByte(),
+        channelMessage.byte1(),
+        channelMessage.byte2()
+    };
+    mRtMidiOut->sendMessage(&message);
+}
+
+int MidiManager::inputPortNumber(std::string name) const {
     auto portCount = mRtMidiIn->getPortCount();
     for (auto portNumber = 0; portNumber < portCount; ++portNumber) {
         auto portName = mRtMidiIn->getPortName(portNumber);
@@ -58,11 +75,22 @@ int MidiManager::portNumber(std::string name) const {
     return -1;
 }
 
+int MidiManager::outputPortNumber(std::string name) const {
+    auto portCount = mRtMidiOut->getPortCount();
+    for (auto portNumber = 0; portNumber < portCount; ++portNumber) {
+        auto portName = mRtMidiOut->getPortName(portNumber);
+        if (portName == name)
+            return portNumber;
+    }
+    
+    return -1;
+}
+
 void MidiManager::recievedMessage(const double& delay, std::vector<unsigned char>* message) const {
     const uint8_t statusByte = message->at(0);
     const uint8_t dataByte1 = message->at(1);
     const uint8_t dataByte2 = (message->size() > 2) ? message->at(2) : 0;
-    mMidiRecievedFunction({delay, statusByte, dataByte1, dataByte2});
+    mMidiRecievedFunction({statusByte, dataByte1, dataByte2}, delay);
 }
 
 }

@@ -21,8 +21,8 @@ public:
     };
 
 public:
-    ChannelMessage(double delay, uint8_t statusByte, uint8_t dataByte1, uint8_t dataByte2) :
-    mDelay(delay), mStatusByte(statusByte), mDataByte1(dataByte1), mDataByte2(dataByte2) {}
+    ChannelMessage(uint8_t statusByte, uint8_t dataByte1, uint8_t dataByte2) :
+    mStatusByte(statusByte), mDataByte1(dataByte1), mDataByte2(dataByte2) {}
 
     Type type() const {
         return static_cast<Type>(mStatusByte & 0xF0);
@@ -48,12 +48,12 @@ public:
         return "";
     }
 
-    double delay() const {
-        return mDelay;
-    }
-
     uint8_t channel() const {
         return (mStatusByte & 0x0F) + 1;
+    }
+
+    uint8_t statusByte() const {
+        return mStatusByte;
     }
 
     uint8_t byte1() const {
@@ -65,12 +65,11 @@ public:
     }
 
 protected:
-    const double mDelay;
     const uint8_t mStatusByte;
     const uint8_t mDataByte1;
     const uint8_t mDataByte2;
 };
 
-using MidiRecievedFunction = std::function<void (const ChannelMessage& channelMessage)>;
+using MidiRecievedFunction = std::function<void (const ChannelMessage& channelMessage, const double& delay)>;
 
 }
