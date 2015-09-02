@@ -5,12 +5,15 @@
 #include <cstdint>
 #include <functional>
 #include <string>
+#include <vector>
 
 namespace midi {
 
+typedef unsigned char byte;
+
 class ChannelMessage {
 public:
-    enum class Type : uint8_t {
+    enum class Type : byte {
         NoteOff = 0x80,
         NoteOn = 0x90,
         PolyphonicAftertouch = 0xA0,
@@ -21,7 +24,7 @@ public:
     };
 
 public:
-    ChannelMessage(uint8_t statusByte, uint8_t dataByte1, uint8_t dataByte2) :
+    ChannelMessage(const byte& statusByte, const byte& dataByte1, const byte& dataByte2) :
     mStatusByte(statusByte), mDataByte1(dataByte1), mDataByte2(dataByte2) {}
 
     Type type() const {
@@ -48,26 +51,54 @@ public:
         return "";
     }
 
-    uint8_t channel() const {
+    std::vector<unsigned char> message() const {
+        std::vector<unsigned char> message{
+            statusByte(),
+            byte1(),
+            byte2()
+        };
+        return message;
+    }
+
+    byte channel() const {
         return (mStatusByte & 0x0F) + 1;
     }
 
-    uint8_t statusByte() const {
+    byte statusByte() const {
         return mStatusByte;
     }
 
-    uint8_t byte1() const {
+    byte byte1() const {
         return mDataByte1;
     }
 
-    uint8_t byte2() const {
+    byte byte2() const {
         return mDataByte2;
     }
 
 protected:
-    const uint8_t mStatusByte;
-    const uint8_t mDataByte1;
-    const uint8_t mDataByte2;
+    const byte mStatusByte;
+    const byte mDataByte1;
+    const byte mDataByte2;
+};
+
+class SysExMessage {
+public:
+    void addByte(const unsigned char& byte) {
+        mBytes.push_back(byte);
+    }
+
+    std::vector<unsigned char> message() const {
+        std::vector<unsigned char> message;
+        message.push_back(0xf0);
+        for (auto& byte : mBytes)
+            message.push_back(byte);
+        message.push_back(0xf7);
+        return message;
+    };
+
+private:
+    std::vector<unsigned char> mBytes;
 };
 
 using MidiRecievedFunction = std::function<void (const ChannelMessage& channelMessage, const double& delay)>;

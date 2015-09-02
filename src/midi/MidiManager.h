@@ -20,7 +20,9 @@ public:
     std::vector<std::string> getPortNames() const;
     bool openPort(std::string name, MidiRecievedFunction f);
     void closePort();
+    
     void sendMessage(const ChannelMessage& channelMessage) const;
+    void sendMessage(const SysExMessage& sysExMessage) const;
     
 private:
     int inputPortNumber(std::string name) const;

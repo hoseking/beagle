@@ -56,11 +56,12 @@ void MidiManager::closePort() {
 }
 
 void MidiManager::sendMessage(const ChannelMessage& channelMessage) const {
-    std::vector<unsigned char> message{
-        channelMessage.statusByte(),
-        channelMessage.byte1(),
-        channelMessage.byte2()
-    };
+    auto message = channelMessage.message();
+    mRtMidiOut->sendMessage(&message);
+}
+
+void MidiManager::sendMessage(const SysExMessage& sysExMessage) const {
+    auto message = sysExMessage.message();
     mRtMidiOut->sendMessage(&message);
 }
 
