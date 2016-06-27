@@ -17,8 +17,10 @@ public:
     MidiManager();
     ~MidiManager();
 
-    std::vector<std::string> getPortNames() const;
-    bool openPort(std::string name, MidiRecievedFunction f);
+    std::vector<std::string> getInputPortNames() const;
+    std::vector<std::string> getOutputPortNames() const;
+
+    bool openPort(std::string input, std::string output, MidiRecievedFunction f);
     void closePort();
     
     void sendMessage(const ChannelMessage& channelMessage) const;
@@ -28,6 +30,7 @@ private:
     int inputPortNumber(std::string name) const;
     int outputPortNumber(std::string name) const;
     void recievedMessage(const double& delay, std::vector<unsigned char>* message) const;
+    std::vector<std::string> getPortNames(RtMidi* rtMidi) const;
 
 private:
     std::unique_ptr<RtMidiIn> mRtMidiIn = nullptr;

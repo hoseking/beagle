@@ -18,62 +18,94 @@
 #include <queue>
 
 midi::MidiManager midiManager;
-std::map<std::string, bool> portNamesMap;
+std::string selectedInputPort;
+std::string selectedOutputPort;
+std::map<std::string, bool> inputPortNamesMap;
+std::map<std::string, bool> outputPortNamesMap;
 std::deque<std::pair<midi::ChannelMessage, double>> inputLog;
 std::deque<midi::ChannelMessage> outputLog;
 std::mutex inputMutex;
 
 void closePort() {
-    for (auto& pair : portNamesMap) {
+    for (auto& pair : inputPortNamesMap) {
+        pair.second = false;
+    }
+    for (auto& pair : outputPortNamesMap) {
         pair.second = false;
     }
     midiManager.closePort();
 }
 
-void openPort(const std::string& portName) {
+void openPort() {
     closePort();
-    portNamesMap[portName] = true;
+    inputPortNamesMap[selectedInputPort] = true;
+    outputPortNamesMap[selectedOutputPort] = true;
 
     auto messageRecieved = [](const midi::ChannelMessage& message, const double& delay) {
         inputMutex.lock();
         inputLog.push_front({message, delay});
         inputMutex.unlock();
     };
-    midiManager.openPort(portName, messageRecieved);
+    midiManager.openPort(selectedInputPort, selectedOutputPort, messageRecieved);
 }
 
 void refreshPorts() {
     midiManager.closePort();
-    portNamesMap.clear();
+    inputPortNamesMap.clear();
+    outputPortNamesMap.clear();
     inputLog.clear();
     outputLog.clear();
 
-    for (auto& portName : midiManager.getPortNames()) {
-        portNamesMap[portName] = false;
+    for (auto& portName : midiManager.getInputPortNames()) {
+        inputPortNamesMap[portName] = false;
     }
 
-    if (portNamesMap.begin() != portNamesMap.end()) {
-        auto it = portNamesMap.begin();
-        openPort(it->first);
-        it->second = true;
+    for (auto& portName : midiManager.getOutputPortNames()) {
+        outputPortNamesMap[portName] = false;
     }
+
+    if (inputPortNamesMap.size() > 0) {
+        selectedInputPort = inputPortNamesMap.begin()->first;
+    }
+
+    if (outputPortNamesMap.size() > 0) {
+        selectedOutputPort = outputPortNamesMap.begin()->first;
+    }
+
+    openPort();
 }
 
-void showDevices() {
-    ImGui::BeginChild("devices_header");
-    ImGui::Text("Devices");
+void showInputs() {
+    ImGui::BeginChild("inputs_header");
+    ImGui::Text("Inputs");
     ImGui::Separator();
 
-    ImGui::BeginChild("devices");
-    for (auto& pair : portNamesMap) {
+    ImGui::BeginChild("inputs");
+    for (auto& pair : inputPortNamesMap) {
         auto portName = pair.first;
         auto selected = &pair.second;
         if (ImGui::Checkbox(portName.c_str(), selected)) {
-            if (*selected) {
-                openPort(portName);
-            } else {
-                closePort();
-            }
+            selectedInputPort = *selected ? portName : "";
+            openPort();
+        }
+    }
+    ImGui::EndChild();
+
+    ImGui::EndChild();
+}
+
+void showOutputs() {
+    ImGui::BeginChild("outputs_header");
+    ImGui::Text("Outputs");
+    ImGui::Separator();
+
+    ImGui::BeginChild("outputs");
+    for (auto& pair : outputPortNamesMap) {
+        auto portName = pair.first;
+        auto selected = &pair.second;
+        if (ImGui::Checkbox(portName.c_str(), selected)) {
+            selectedOutputPort = *selected ? portName : "";
+            openPort();
         }
     }
     ImGui::EndChild();
@@ -227,7 +259,7 @@ int main() {
     if (!glfwInit())
         exit(1);
 
-    GLFWwindow* window = glfwCreateWindow(800, 600, "Beagle", nullptr, nullptr);
+    GLFWwindow* window = glfwCreateWindow(1000, 600, "Beagle", nullptr, nullptr);
 	if (!window)
 		exit(1);
 
@@ -283,8 +315,9 @@ int main() {
         ImGui::Begin("main", nullptr, {0, 0}, 1, flags);
 
         ImGui::BeginChild("child", {0, 160});
-        ImGui::Columns(3);
-        showDevices(); ImGui::NextColumn();
+        ImGui::Columns(4);
+        showInputs(); ImGui::NextColumn();
+        showOutputs(); ImGui::NextColumn();
         showOptions(); ImGui::NextColumn();
         showOutput(); ImGui::NextColumn();
         ImGui::EndChild();
